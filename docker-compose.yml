@@ -1,0 +1,62 @@
+
+services:
+  db:
+    container_name: local_pgdb2
+    image: postgres:16.1-bookworm
+    
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: localdb
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+
+    ports:
+    - ${POSTGRES_PORT}:5432
+    
+    networks:
+      - dbnet
+
+    restart: unless-stopped
+
+  api: #production. For dev use deccontainer docker-compose.yml override
+    container_name: jest-nest-app
+    
+    build:
+      context: .
+      #dockerfile: backend/dockerfile
+      dockerfile: ./dockerfile
+      target: prod
+
+    volumes:
+      - ./jest-nest-app:/var/api
+    
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+
+    ports:
+    - 3000
+
+    networks:
+      #- apinet
+      - dbnet
+
+    depends_on:
+      - db
+
+    command: ["pm2-runtime", "dist/main.js"]
+
+networks:
+  dbnet:
+    name: db
+
+    # apinet:
+    #   name: api
+
+# volumes:
+#   data:
